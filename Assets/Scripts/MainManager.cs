@@ -26,10 +26,27 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
+
+    private void Awake()
+    {
+        Debug.Log("This is " + this + Instance + gameObject);
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Debug.Log("This is " + this + Instance + gameObject);
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        LoadHighScoreText();
+        BestScoreText.text = $"Best Score: {highScoreName}: {highScore}";
+    }
+
     // Start is called before the first frame update
     void Start()
     {
+        Debug.Log("WTF?");
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -65,7 +82,12 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
+                // THIS IS THE LINE THAT SEEMS TO BE PROBLEMATIC!!! Should it be changed?
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                
+                // Added this for when the Game is supposed to be restarted
+                LoadHighScoreText();
+                Debug.Log("I loaded the High Score Text");
             }
         }
     }
@@ -81,22 +103,11 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        SaveHighScoreText();
+        Debug.Log("I saved the high score text");
     }
 
-    private void Awake()
-    {
-        if (Instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-        LoadHighScoreText();
-        // BestScoreText.text = $"Best Score: {highScoreName}: {highScore}";
-    }
-
+    
     [System.Serializable]
     class SaveData
     {
