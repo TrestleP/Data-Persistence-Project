@@ -16,7 +16,7 @@ public class MainManager : MonoBehaviour
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
-
+    
     public Text BestScoreText;
     public Text ScoreText;
     public GameObject GameOverText;
