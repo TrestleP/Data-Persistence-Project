@@ -4,53 +4,49 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.IO;
-using TMPro;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class MainManager : MonoBehaviour
 {
     public static MainManager Instance;
-    // public static Text playerName;
-    public static int highScore = 0;
-    public static Text highScoreName;
 
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
-    
-    public Text BestScoreText;
+
     public Text ScoreText;
+    public Text HighScoreText;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
-    public static int m_Points;
-    
+    private int m_Points;
+
     private bool m_GameOver = false;
+
+    public string userName { get; internal set; }
+    public string playerName { get; internal set; }
+    public string highScoreName { get; internal set; }
+    public int highScore;
 
 
     private void Awake()
     {
-        Debug.Log("This is " + this + Instance + gameObject);
-        if (Instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Debug.Log("This is " + this + Instance + gameObject);
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-        LoadHighScoreText();
-        BestScoreText.text = $"Best Score: {highScoreName}: {highScore}";
+        playerName = MenuUIHandler.scene1.userName;
+        LoadHighScore();
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log("WTF?");
+        HighScoreText.text = "Best Score: " + highScoreName + " " + highScore;
+        ScoreText.text = $"{playerName} Score : 0";
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -82,58 +78,79 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                // THIS IS THE LINE THAT SEEMS TO BE PROBLEMATIC!!! Should it be changed?
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-                
-                // Added this for when the Game is supposed to be restarted
-                LoadHighScoreText();
-                Debug.Log("I loaded the High Score Text");
+            }
+
+            //I put this here to exit the game using the Unity Editor application exit
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                Exit();
             }
         }
     }
 
     void AddPoint(int point)
     {
-        BestScoreText.text = $"Best Score: {highScoreName}: {highScore}";
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"{playerName} Score : {m_Points}";
+        if (m_Points >= highScore)
+        {
+            highScore = m_Points;
+            highScoreName = playerName;
+            HighScoreText.text = "Best Score: " + highScoreName + " " + highScore;
+
+        }
     }
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
-        SaveHighScoreText();
-        Debug.Log("I saved the high score text");
+        SaveHighScore();
     }
 
-    
+    public void Exit()
+    {
+        SaveHighScore();
+#if UNITY_EDITOR
+
+        EditorApplication.ExitPlaymode();
+
+#else
+        Application.Quit();
+
+#endif
+    }
+
     [System.Serializable]
-    class SaveData
+    public class PlayerData
     {
-        public Text highScoreName;
-
-        public int highScore { get; internal set; }
+        public string highScoreName;
+        public int highScore;
     }
 
-    public void SaveHighScoreText()
+    public void SaveHighScore()
     {
-        SaveData data = new SaveData();
-        data.highScore = highScore;
-        data.highScoreName = highScoreName;
+        if (m_Points >= highScore)
+        {
+            PlayerData data = new PlayerData();
+            data.highScore = m_Points;
+            data.highScoreName = playerName;
 
-        string json = JsonUtility.ToJson(data);
+            string json = JsonUtility.ToJson(data);
 
-        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+            File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
     }
 
-    public void LoadHighScoreText()
+    public void LoadHighScore()
     {
         string path = Application.persistentDataPath + "/savefile.json";
         if (File.Exists(path))
         {
             string json = File.ReadAllText(path);
-            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            PlayerData data = JsonUtility.FromJson<PlayerData>(json);
+
             highScore = data.highScore;
             highScoreName = data.highScoreName;
         }
